@@ -6,6 +6,15 @@
   <title>Hematly - Catatan Pengeluaran Harian Pintar</title>
   <meta name="description" content="Aplikasi pencatatan pengeluaran harian modern, cepat, dan otomatis dengan Firebase real-time database.">
   
+  <!-- PWA: ikon & manifest agar bisa di-install / dibuat pintasan -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Hematly">
+
   <!-- Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -311,6 +320,15 @@
               <option value="Rokok" data-icon="flame" data-color="red">🚬 Rokok</option>
               <option value="Lainnya" data-icon="more-horizontal" data-color="purple">📦 Lainnya</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Kategori spesifik (muncul saat memilih "Lainnya") -->
+        <div class="form-group hidden" id="custom-category-group">
+          <label for="expense-category-custom">Tulis Kategori Sendiri <span class="required">*</span></label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="pencil"></i>
+            <input type="text" id="expense-category-custom" placeholder="Contoh: Pulsa, Parkir, Laundry" maxlength="30" autocomplete="off">
           </div>
         </div>
 

@@ -83,6 +83,8 @@ const expenseAmountInput = document.getElementById("expense-amount");
 const amountFormattedHint = document.getElementById("amount-formatted-hint");
 const expenseDateInput = document.getElementById("expense-date");
 const expenseCategoryInput = document.getElementById("expense-category");
+const customCategoryGroup = document.getElementById("custom-category-group");
+const customCategoryInput = document.getElementById("expense-category-custom");
 const expenseNotesInput = document.getElementById("expense-notes");
 
 // Delete Modal Elements
@@ -399,7 +401,7 @@ function applyFilterAndRender() {
 
 function renderCategoryBreakdown(categoryTotals, totalAmount) {
   breakdownListEl.innerHTML = "";
-  const categories = Object.keys(CATEGORY_META);
+  const categories = Object.keys(categoryTotals);
 
   if (totalAmount === 0) {
     breakdownListEl.innerHTML = `<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 6px 0;">Belum ada data pada filter ini.</p>`;
@@ -419,7 +421,7 @@ function renderCategoryBreakdown(categoryTotals, totalAmount) {
     itemEl.className = "breakdown-item";
     itemEl.innerHTML = `
       <div class="breakdown-meta">
-        <span>${meta.icon} ${cat} (${percentage}%)</span>
+        <span>${meta.icon} ${escapeHTML(cat)} (${percentage}%)</span>
         <span style="color: ${meta.color};">${formatIDR(amount)}</span>
       </div>
       <div class="breakdown-bar-bg">
@@ -451,8 +453,8 @@ function renderTransactionList(transactions) {
         </div>
         <div class="item-details">
           <div class="item-title">
-            <span>${item.category}</span>
-            <span class="item-category-tag" style="background: ${meta.color}20; color: ${meta.color};">${item.category}</span>
+            <span>${escapeHTML(item.category)}</span>
+            <span class="item-category-tag" style="background: ${meta.color}20; color: ${meta.color};">${escapeHTML(item.category)}</span>
           </div>
           ${item.notes ? `<span class="item-note">${escapeHTML(item.notes)}</span>` : ""}
           <span class="item-date"><i data-lucide="calendar" style="width:12px; height:12px; display:inline-block; vertical-align:middle;"></i> ${formatDisplayDate(item.date)}</span>
@@ -500,8 +502,18 @@ searchInput.addEventListener("input", (e) => {
 
 // ==================== MODAL & TRANSACTION INPUT ====================
 
+function toggleCustomCategory() {
+  const isOther = expenseCategoryInput.value === "Lainnya";
+  customCategoryGroup.classList.toggle("hidden", !isOther);
+  customCategoryInput.required = isOther;
+  if (isOther) customCategoryInput.focus();
+}
+
+expenseCategoryInput.addEventListener("change", toggleCustomCategory);
+
 function openExpenseModal() {
   expenseForm.reset();
+  toggleCustomCategory();
   resetDatePicker();
   amountFormattedHint.textContent = "Masukkan jumlah rupiah";
   expenseModal.classList.remove("hidden");
@@ -539,7 +551,7 @@ expenseForm.addEventListener("submit", async (e) => {
 
   const rawAmount = expenseAmountInput.value.replace(/\D/g, "");
   const amount = parseInt(rawAmount, 10);
-  const category = expenseCategoryInput.value;
+  let category = expenseCategoryInput.value;
   const date = expenseDateInput.value;
   const notes = expenseNotesInput.value.trim();
   const saveBtn = document.getElementById("btn-save-expense");
@@ -554,6 +566,20 @@ expenseForm.addEventListener("submit", async (e) => {
     showToast("Silakan pilih kategori pengeluaran", "error");
     expenseCategoryInput.focus();
     return;
+  }
+
+  if (category === "Lainnya") {
+    const custom = customCategoryInput.value.trim().replace(/\s+/g, " ").slice(0, 30);
+    if (!custom) {
+      showToast("Tulis kategori pengeluaranmu", "error");
+      customCategoryInput.focus();
+      return;
+    }
+    // Jika sama dengan kategori bawaan (mis. "makan"), pakai nama bakunya
+    const builtIn = Object.keys(CATEGORY_META).find(
+      (k) => k !== "Lainnya" && k.toLowerCase() === custom.toLowerCase()
+    );
+    category = builtIn || custom;
   }
 
   if (!date) {
@@ -649,3 +675,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) window.lucide.createIcons();
   resetDatePicker();
 });
+
+// ==================== PWA: SERVICE WORKER ====================
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => console.warn("SW gagal didaftarkan:", err));
+  });
+}
