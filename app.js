@@ -35,7 +35,7 @@ let itemToDeleteId = null;
 const CATEGORY_META = {
   Makan: { icon: "🍔", tagClass: "cat-makan", color: "#f97316" },
   Minum: { icon: "☕", tagClass: "cat-minum", color: "#0ea5e9" },
-  Jajanan: { icon: "🍩", tagClass: "cat-jajanan", color: "#ec4899" },
+  Jajanan: { icon: "🍩", tagClass: "cat-jajan", color: "#ec4899" },
   Bensin: { icon: "⛽", tagClass: "cat-bensin", color: "#eab308" },
   Rokok: { icon: "🚬", tagClass: "cat-rokok", color: "#ef4444" },
   Lainnya: { icon: "📦", tagClass: "cat-lainnya", color: "#8b5cf6" }
