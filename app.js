@@ -3,13 +3,14 @@
  */
 
 import {
-  auth,
-  db,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile,
+  updateProfile
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+import {
   collection,
   addDoc,
   deleteDoc,
@@ -18,7 +19,9 @@ import {
   query,
   orderBy,
   serverTimestamp
-} from "./firebase-config.js";
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+import { auth, db } from "./firebase-config.js";
 
 // ==================== STATE MANAGEMENT ====================
 let currentUser = null;
@@ -281,7 +284,6 @@ function initFirestoreListener(uid) {
   emptyState.classList.add("hidden");
   expenseItemsContainer.innerHTML = "";
 
-  // Reference to user-specific subcollection: users/{uid}/expenses
   const userExpensesRef = collection(db, "users", uid, "expenses");
   const q = query(userExpensesRef, orderBy("date", "desc"));
 
@@ -299,13 +301,12 @@ function initFirestoreListener(uid) {
           id: docSnap.id,
           amount: Number(data.amount) || 0,
           category: data.category || "Lainnya",
-          date: data.date, // format YYYY-MM-DD
+          date: data.date,
           notes: data.notes || "",
           createdAt: data.createdAt
         });
       });
 
-      // Recalculate & Render based on current filter
       applyFilterAndRender();
     },
     (error) => {
@@ -318,24 +319,19 @@ function initFirestoreListener(uid) {
 
 // ==================== FILTER & AUTO-SUM LOGIC ====================
 
-/**
- * Filter data by selected timeframe and search term
- */
 function getFilteredData() {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
   const todayStr = `${currentYear}-${currentMonth}-${String(now.getDate()).padStart(2, "0")}`;
 
-  // Start of current week (Monday)
-  const dayOfWeek = now.getDay(); // 0 is Sun, 1 is Mon
+  const dayOfWeek = now.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() + diffToMonday);
   const startOfWeekStr = startOfWeek.toISOString().split("T")[0];
 
   return allTransactions.filter((item) => {
-    // 1. Timeframe check
     let matchesTime = true;
     if (currentFilter === "today") {
       matchesTime = item.date === todayStr;
@@ -349,7 +345,6 @@ function getFilteredData() {
       matchesTime = true;
     }
 
-    // 2. Search query check (notes or category)
     let matchesSearch = true;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase();
@@ -362,20 +357,13 @@ function getFilteredData() {
   });
 }
 
-/**
- * Apply filters, perform auto-summing calculations, and update DOM
- */
 function applyFilterAndRender() {
   const filteredData = getFilteredData();
 
-  // 1. Auto-Summing Total Nominal
   const totalAmount = filteredData.reduce((sum, item) => sum + item.amount, 0);
   const totalCount = filteredData.length;
-
-  // 2. Average per transaction
   const avgAmount = totalCount > 0 ? Math.round(totalAmount / totalCount) : 0;
 
-  // 3. Category Breakdown & Top Category
   const categoryTotals = {};
   filteredData.forEach((item) => {
     categoryTotals[item.category] = (categoryTotals[item.category] || 0) + item.amount;
@@ -390,13 +378,11 @@ function applyFilterAndRender() {
     }
   }
 
-  // Update Summary UI
   totalAmountEl.textContent = formatIDR(totalAmount);
   transactionCountLabel.textContent = `${totalCount} transaksi tercatat`;
   avgAmountEl.textContent = formatIDR(avgAmount);
   topCategoryEl.textContent = topCategoryName !== "-" ? `${topCategoryName} (${formatIDR(topCategoryMax)})` : "-";
 
-  // Update Active Filter Badge Title
   const filterLabels = {
     today: "Hari Ini",
     week: "Minggu Ini",
@@ -407,16 +393,10 @@ function applyFilterAndRender() {
   activeFilterBadge.textContent = filterLabels[currentFilter];
   breakdownPeriodTitle.textContent = filterLabels[currentFilter];
 
-  // Render Category Breakdown Bars
   renderCategoryBreakdown(categoryTotals, totalAmount);
-
-  // Render Transaction Cards List
   renderTransactionList(filteredData);
 }
 
-/**
- * Render visual breakdown progress bars
- */
 function renderCategoryBreakdown(categoryTotals, totalAmount) {
   breakdownListEl.innerHTML = "";
   const categories = Object.keys(CATEGORY_META);
@@ -426,7 +406,6 @@ function renderCategoryBreakdown(categoryTotals, totalAmount) {
     return;
   }
 
-  // Sort categories by highest spend
   const sortedCategories = categories
     .filter(cat => categoryTotals[cat] > 0)
     .sort((a, b) => (categoryTotals[b] || 0) - (categoryTotals[a] || 0));
@@ -451,9 +430,6 @@ function renderCategoryBreakdown(categoryTotals, totalAmount) {
   });
 }
 
-/**
- * Render list of transactions in chronological descending order
- */
 function renderTransactionList(transactions) {
   expenseItemsContainer.innerHTML = "";
 
@@ -490,7 +466,6 @@ function renderTransactionList(transactions) {
       </div>
     `;
 
-    // Hook delete button
     el.querySelector(".btn-item-delete").addEventListener("click", () => {
       openDeleteModal(item.id);
     });
@@ -525,7 +500,6 @@ searchInput.addEventListener("input", (e) => {
 
 // ==================== MODAL & TRANSACTION INPUT ====================
 
-// Open Modal
 function openExpenseModal() {
   expenseForm.reset();
   resetDatePicker();
@@ -534,7 +508,6 @@ function openExpenseModal() {
   expenseAmountInput.focus();
 }
 
-// Close Modal
 function closeExpenseModal() {
   expenseModal.classList.add("hidden");
 }
@@ -544,14 +517,11 @@ fabAdd.addEventListener("click", openExpenseModal);
 btnCloseModal.addEventListener("click", closeExpenseModal);
 btnCancelModal.addEventListener("click", closeExpenseModal);
 
-// Close modal when clicking on overlay background
 expenseModal.addEventListener("click", (e) => {
   if (e.target === expenseModal) closeExpenseModal();
 });
 
-// Format Nominal input with live typing Indonesian number format
 expenseAmountInput.addEventListener("input", (e) => {
-  // Remove non-digits
   const rawValue = e.target.value.replace(/\D/g, "");
   if (!rawValue) {
     e.target.value = "";
@@ -563,7 +533,6 @@ expenseAmountInput.addEventListener("input", (e) => {
   amountFormattedHint.textContent = `Terbaca: ${formatIDR(numericValue)}`;
 });
 
-// Handle Add Transaction Submission
 expenseForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentUser) return;
@@ -656,7 +625,6 @@ btnConfirmDelete.addEventListener("click", async () => {
   }
 });
 
-// Initialize Lucide Icons on initial load
 document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) window.lucide.createIcons();
   resetDatePicker();
