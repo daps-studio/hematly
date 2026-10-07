@@ -561,28 +561,48 @@ expenseForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  try {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = `<span>Menyimpan...</span>`;
+  const resetSaveBtn = () => {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = `<i data-lucide="check"></i><span>Simpan Transaksi</span>`;
+    if (window.lucide) window.lucide.createIcons();
+  };
 
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = `<span>Menyimpan...</span>`;
+
+  try {
     const userExpensesRef = collection(db, "users", currentUser.uid, "expenses");
-    await addDoc(userExpensesRef, {
-      amount: Number(amount),
-      category: category,
-      date: date,
-      notes: notes,
-      createdAt: serverTimestamp()
-    });
+
+    // Batas waktu 10 detik supaya tombol tidak menggantung selamanya
+    // (biasanya terjadi jika Firestore belum dibuat / koneksi terblokir).
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("TIMEOUT")), 10000)
+    );
+
+    await Promise.race([
+      addDoc(userExpensesRef, {
+        amount: Number(amount),
+        category: category,
+        date: date,
+        notes: notes,
+        createdAt: serverTimestamp()
+      }),
+      timeout
+    ]);
 
     showToast("Pengeluaran berhasil dicatat!", "success");
     closeExpenseModal();
   } catch (err) {
     console.error("Save Error:", err);
-    showToast("Gagal menyimpan transaksi: " + err.message, "error");
+    if (err.message === "TIMEOUT") {
+      showToast("Server tidak merespons. Periksa koneksi internet atau pengaturan Firestore (database & rules).", "error");
+    } else if (err.code === "permission-denied") {
+      showToast("Akses ditolak oleh Firestore Rules. Periksa aturan keamanan database.", "error");
+    } else {
+      showToast("Gagal menyimpan transaksi: " + err.message, "error");
+    }
   } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = `<i data-lucide="check"></i><span>Simpan Transaksi</span>`;
-    if (window.lucide) window.lucide.createIcons();
+    resetSaveBtn();
   }
 });
 

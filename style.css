@@ -65,6 +65,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Kunci scroll halaman saat tampilan login aktif */
+html:has(#auth-view:not(.hidden)),
+body:has(#auth-view:not(.hidden)) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 input, button, select, textarea {
   font-family: inherit;
   font-size: 0.95rem;
@@ -143,7 +150,10 @@ a {
 
 /* ==================== AUTH VIEW ==================== */
 .auth-view {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: none;
   display: flex;
   align-items: center;
   justify-content: center;
