@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hematly - Catatan Pengeluaran Harian Pintar</title>
+  <meta name="description" content="Aplikasi pencatatan pengeluaran harian modern, cepat, dan otomatis dengan Firebase real-time database.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- ==================== AUTH VIEW (LOGIN / REGISTER) ==================== -->
+  <main id="auth-view" class="auth-view">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-logo">
+          <i data-lucide="wallet-cards"></i>
+        </div>
+        <h1>Hemat<span>ly</span></h1>
+        <p class="brand-subtitle">Kelola keuangan harianmu dengan mudah dan presisi.</p>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="auth-tabs">
+        <button id="tab-login-btn" class="auth-tab active" type="button">Masuk</button>
+        <button id="tab-register-btn" class="auth-tab" type="button">Daftar Akun</button>
+      </div>
+
+      <!-- Form Login -->
+      <form id="login-form" class="auth-form active">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="mail"></i>
+            <input type="email" id="login-email" placeholder="nama@email.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Kata Sandi</label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="lock"></i>
+            <input type="password" id="login-password" placeholder="Minimal 6 karakter" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pwd" data-target="login-password" aria-label="Lihat kata sandi">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block">
+          <span class="btn-text">Masuk Sekarang</span>
+          <i data-lucide="arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- Form Register -->
+      <form id="register-form" class="auth-form">
+        <div class="form-group">
+          <label for="reg-name">Nama Lengkap</label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="user"></i>
+            <input type="text" id="reg-name" placeholder="Nama Anda" required autocomplete="name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="mail"></i>
+            <input type="email" id="reg-email" placeholder="nama@email.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password">Kata Sandi</label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="lock"></i>
+            <input type="password" id="reg-password" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password">
+            <button type="button" class="btn-toggle-pwd" data-target="reg-password" aria-label="Lihat kata sandi">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="register-submit-btn" class="btn btn-primary btn-block">
+          <span class="btn-text">Buat Akun Baru</span>
+          <i data-lucide="user-plus"></i>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p><i data-lucide="shield-check"></i> Data tersimpan aman & privat di Firebase Cloud</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== DASHBOARD VIEW (MAIN APP) ==================== -->
+  <div id="dashboard-view" class="dashboard-view hidden">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="header-brand">
+          <div class="brand-icon">
+            <i data-lucide="wallet"></i>
+          </div>
+          <div>
+            <h2 class="brand-title">Hemat<span>ly</span></h2>
+            <span class="app-badge">Tracker</span>
+          </div>
+        </div>
+
+        <div class="header-user">
+          <div class="user-meta">
+            <span class="user-greeting">Halo,</span>
+            <span id="user-display-name" class="user-name">Pengguna</span>
+          </div>
+          <button id="btn-logout" class="btn-icon" title="Keluar Akun" aria-label="Logout">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-container">
+      <!-- Top Summary Section -->
+      <section class="summary-grid">
+        <!-- Main Total Expense Card -->
+        <div class="summary-card total-card">
+          <div class="card-glow"></div>
+          <div class="card-header">
+            <span class="card-label">Total Pengeluaran</span>
+            <span id="active-filter-badge" class="filter-tag">Bulan Ini</span>
+          </div>
+          <div class="card-body">
+            <h1 id="total-amount" class="total-nominal">Rp 0</h1>
+            <p id="transaction-count-label" class="total-caption">0 transaksi tercatat</p>
+          </div>
+          <div class="card-footer">
+            <button id="btn-open-modal" class="btn btn-accent">
+              <i data-lucide="plus-circle"></i>
+              <span>Tambah Pengeluaran</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stats-subgrid">
+          <div class="stat-card">
+            <div class="stat-icon bg-emerald">
+              <i data-lucide="receipt"></i>
+            </div>
+            <div>
+              <span class="stat-label">Rata-rata / Transaksi</span>
+              <p id="avg-amount" class="stat-value">Rp 0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon bg-amber">
+              <i data-lucide="pie-chart"></i>
+            </div>
+            <div>
+              <span class="stat-label">Kategori Terbanyak</span>
+              <p id="top-category" class="stat-value">-</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filter Controls & Category Pills -->
+      <section class="filter-section">
+        <div class="filter-header">
+          <div class="filter-title">
+            <i data-lucide="sliders-horizontal"></i>
+            <h3>Rentang Waktu</h3>
+          </div>
+          <span class="auto-sum-indicator"><i data-lucide="sparkles"></i> Auto-rekapitulasi aktif</span>
+        </div>
+
+        <div class="filter-buttons-group">
+          <button class="filter-btn" data-period="today">
+            <i data-lucide="calendar"></i>
+            <span>Hari Ini</span>
+          </button>
+          <button class="filter-btn" data-period="week">
+            <i data-lucide="calendar-range"></i>
+            <span>Minggu Ini</span>
+          </button>
+          <button class="filter-btn active" data-period="month">
+            <i data-lucide="calendar-days"></i>
+            <span>Bulan Ini</span>
+          </button>
+          <button class="filter-btn" data-period="year">
+            <i data-lucide="calendar-clock"></i>
+            <span>Tahun Ini</span>
+          </button>
+          <button class="filter-btn" data-period="all">
+            <i data-lucide="layers"></i>
+            <span>Semua</span>
+          </button>
+        </div>
+
+        <!-- Category Breakdown Bars -->
+        <div id="category-breakdown" class="category-breakdown-card">
+          <h4>Distribusi Kategori (<span id="breakdown-period-title">Bulan Ini</span>)</h4>
+          <div id="breakdown-list" class="breakdown-list">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Transaction List Section -->
+      <section class="transactions-section">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <i data-lucide="history" class="header-icon"></i>
+            <h3>Riwayat Pengeluaran</h3>
+          </div>
+          <div class="search-sort-wrap">
+            <div class="search-input-wrap">
+              <i data-lucide="search"></i>
+              <input type="text" id="search-input" placeholder="Cari catatan/kategori...">
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense List Container -->
+        <div id="expense-list-container" class="expense-list-container">
+          <!-- Loading Skeleton -->
+          <div id="loading-state" class="loading-state">
+            <div class="spinner"></div>
+            <p>Memuat catatan keuangan...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div id="empty-state" class="empty-state hidden">
+            <div class="empty-illustration">
+              <i data-lucide="inbox"></i>
+            </div>
+            <h4>Belum Ada Pengeluaran</h4>
+            <p>Tidak ditemukan transaksi untuk rentang waktu ini. Mulai catat pengeluaran harianmu sekarang!</p>
+            <button class="btn btn-secondary" onclick="document.getElementById('btn-open-modal').click()">
+              <i data-lucide="plus"></i> Tambah Pertama
+            </button>
+          </div>
+
+          <!-- Items Container -->
+          <div id="expense-items" class="expense-items"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Floating Action Button (Mobile) -->
+    <button id="fab-add" class="fab-btn" title="Tambah Pengeluaran" aria-label="Tambah">
+      <i data-lucide="plus"></i>
+    </button>
+  </div>
+
+  <!-- ==================== MODAL FORM INPUT PENGELUARAN ==================== -->
+  <div id="expense-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge">
+            <i data-lucide="receipt-text"></i>
+          </div>
+          <div>
+            <h3 id="modal-title">Tambah Pengeluaran</h3>
+            <p class="modal-subtitle">Isi rincian pengeluaran barumu di bawah ini</p>
+          </div>
+        </div>
+        <button id="btn-close-modal" class="btn-close" aria-label="Tutup modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="expense-form" class="modal-body">
+        <!-- Input Nominal with Live IDR Preview -->
+        <div class="form-group">
+          <label for="expense-amount">Nominal Pengeluaran <span class="required">*</span></label>
+          <div class="input-currency-wrapper">
+            <span class="currency-prefix">Rp</span>
+            <input type="text" id="expense-amount" inputmode="numeric" placeholder="0" required autocomplete="off">
+          </div>
+          <small id="amount-formatted-hint" class="input-hint">Masukkan jumlah rupiah</small>
+        </div>
+
+        <!-- Dropdown Kategori -->
+        <div class="form-group">
+          <label for="expense-category">Kategori <span class="required">*</span></label>
+          <div class="custom-select-wrapper">
+            <i data-lucide="tag" class="select-icon"></i>
+            <select id="expense-category" required>
+              <option value="" disabled selected>Pilih Kategori</option>
+              <option value="Makan" data-icon="utensils" data-color="orange">🍔 Makan</option>
+              <option value="Minum" data-icon="coffee" data-color="sky">☕ Minum</option>
+              <option value="Jajanan" data-icon="cookie" data-color="pink">🍩 Jajanan</option>
+              <option value="Bensin" data-icon="fuel" data-color="yellow">⛽ Bensin</option>
+              <option value="Rokok" data-icon="flame" data-color="red">🚬 Rokok</option>
+              <option value="Lainnya" data-icon="more-horizontal" data-color="purple">📦 Lainnya</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tanggal Pengeluaran -->
+        <div class="form-group">
+          <label for="expense-date">Tanggal Transaksi <span class="required">*</span></label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="calendar"></i>
+            <input type="date" id="expense-date" required>
+          </div>
+        </div>
+
+        <!-- Catatan / Keterangan Tambahan -->
+        <div class="form-group">
+          <label for="expense-notes">Catatan (Opsional)</label>
+          <div class="input-icon-wrapper">
+            <i data-lucide="file-text"></i>
+            <input type="text" id="expense-notes" placeholder="Cth: Nasi Padang siang, Pertalite, dll">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-modal" class="btn btn-secondary">Batal</button>
+          <button type="submit" id="btn-save-expense" class="btn btn-primary">
+            <i data-lucide="check"></i>
+            <span>Simpan Transaksi</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
+  <div id="delete-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-compact">
+      <div class="modal-header alert-header">
+        <div class="alert-icon-badge">
+          <i data-lucide="alert-triangle"></i>
+        </div>
+        <div>
+          <h3>Hapus Catatan?</h3>
+          <p class="modal-subtitle">Tindakan ini tidak dapat dibatalkan.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-cancel-delete" class="btn btn-secondary">Batal</button>
+        <button type="button" id="btn-confirm-delete" class="btn btn-danger">
+          <i data-lucide="trash-2"></i> Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase & App Scripts -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
